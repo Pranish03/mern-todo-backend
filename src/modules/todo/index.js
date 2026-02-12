@@ -26,8 +26,23 @@ todoRouter.post("/", validate(createTodoSchema), async (req, res) => {
 });
 
 /**
+ * @DESC Get all todos
+ * @API  GET todos/
+ */
+todoRouter.get("/", async (req, res) => {
+  try {
+    const todos = await Todo.find();
+
+    return res.status(200).json({ data: todos });
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+/**
  * @DESC Edits a todo
- * @API  PUT todos/:id
+ * @API  PATCH todos/:id
  */
 todoRouter.patch("/:id", validate(editTodoSchema), async (req, res) => {
   try {
@@ -35,7 +50,9 @@ todoRouter.patch("/:id", validate(editTodoSchema), async (req, res) => {
 
     const data = { ...req.validated };
 
-    const todo = await Todo.findByIdAndUpdate(todoId, data, { new: true });
+    const todo = await Todo.findByIdAndUpdate(todoId, data, {
+      returnDocument: "after",
+    });
 
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });
@@ -45,6 +62,27 @@ todoRouter.patch("/:id", validate(editTodoSchema), async (req, res) => {
       message: "Todo updated successfully",
       data: todo,
     });
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+/**
+ * @DESC Deletes a todo
+ * @API  DELETE todos/
+ */
+todoRouter.delete("/:id", async (req, res) => {
+  try {
+    const todoId = req.params.id;
+
+    const todo = await Todo.findByIdAndDelete(todoId);
+
+    if (!todo) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
+
+    return res.status(200).json({ message: "Todo deleted successfully" });
   } catch (error) {
     console.log(`Error: ${error}`);
     return res.status(500).json({ message: "Internal server error" });
