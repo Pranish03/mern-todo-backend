@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { validate } from "../../middlewares/validate.js";
 import { loginSchema, signupSchema } from "./schema.js";
 import { User } from "./model.js";
+import { authenticate } from "../../middlewares/authenticate.js";
 
 const authRouter = Router();
 
@@ -79,6 +80,30 @@ authRouter.post("/login", validate(loginSchema), async (req, res) => {
         token,
         user: { ...userExists._doc, password: undefined },
       },
+    });
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+/**
+ * @DESC Check auth status
+ * @API  GET auth/me
+ */
+authRouter.get("/me", authenticate, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ message: "User does not exist" });
+    }
+
+    return res.status(200).json({
+      message: "You are logged in",
+      data: { user },
     });
   } catch (error) {
     console.log(`Error: ${error}`);
