@@ -19,7 +19,7 @@ authRouter.post("/signup", validate(signupSchema), async (req, res) => {
     const userExists = await User.findOne({ email: data.email });
 
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(409).json({ message: "User already exists" });
     }
 
     const hash = await bcrypt.hash(data.password, 10);
@@ -58,7 +58,7 @@ authRouter.post("/login", validate(loginSchema), async (req, res) => {
     const userExists = await User.findOne({ email: data.email });
 
     if (!userExists) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const matchPassword = await bcrypt.compare(
@@ -67,7 +67,7 @@ authRouter.post("/login", validate(loginSchema), async (req, res) => {
     );
 
     if (!matchPassword) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const token = jwt.sign({ userId: userExists._id }, process.env.JWT_SECRET, {
