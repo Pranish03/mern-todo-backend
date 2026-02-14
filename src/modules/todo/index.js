@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authenticate } from "../../middlewares/authenticate.js";
 import { validate } from "../../middlewares/validate.js";
 import { createTodoSchema, editTodoSchema } from "./schema.js";
 import { Todo } from "./model.js";
@@ -9,29 +10,34 @@ const todoRouter = Router();
  * @DESC Creates a todo
  * @API  POST todos/
  */
-todoRouter.post("/", validate(createTodoSchema), async (req, res) => {
-  try {
-    const data = req.validated;
+todoRouter.post(
+  "/",
+  authenticate,
+  validate(createTodoSchema),
+  async (req, res) => {
+    try {
+      const data = { ...req.validated, user: req.user.userId };
 
-    const todo = await Todo.create(data);
+      const todo = await Todo.create(data);
 
-    return res.status(201).json({
-      message: "Todo created successfully",
-      data: todo,
-    });
-  } catch (error) {
-    console.log(`Error: ${error}`);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
+      return res.status(201).json({
+        message: "Todo created successfully",
+        data: todo,
+      });
+    } catch (error) {
+      console.log(`Error: ${error}`);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  },
+);
 
 /**
  * @DESC Get all todos
  * @API  GET todos/
  */
-todoRouter.get("/", async (req, res) => {
+todoRouter.get("/", authenticate, async (req, res) => {
   try {
-    const todos = await Todo.find();
+    const todos = await Todo.find({ user: req.user.userId });
 
     return res.status(200).json({ data: todos });
   } catch (error) {
@@ -44,39 +50,49 @@ todoRouter.get("/", async (req, res) => {
  * @DESC Edits a todo
  * @API  PATCH todos/:id
  */
-todoRouter.patch("/:id", validate(editTodoSchema), async (req, res) => {
-  try {
-    const todoId = req.params.id;
+todoRouter.patch(
+  "/:id",
+  authenticate,
+  validate(editTodoSchema),
+  async (req, res) => {
+    try {
+      const todoId = req.params.id;
 
-    const data = { ...req.validated };
+      const data = { ...req.validated };
 
-    const todo = await Todo.findByIdAndUpdate(todoId, data, {
-      returnDocument: "after",
-    });
+      const todo = await Todo.findOneAndUpdate(
+        { _id: todoId, user: req.user.userId },
+        data,
+        { returnDocument: "after" },
+      );
 
-    if (!todo) {
-      return res.status(404).json({ message: "Todo not found" });
+      if (!todo) {
+        return res.status(404).json({ message: "Todo not found" });
+      }
+
+      return res.status(200).json({
+        message: "Todo updated successfully",
+        data: todo,
+      });
+    } catch (error) {
+      console.log(`Error: ${error}`);
+      return res.status(500).json({ message: "Internal server error" });
     }
-
-    return res.status(200).json({
-      message: "Todo updated successfully",
-      data: todo,
-    });
-  } catch (error) {
-    console.log(`Error: ${error}`);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
+  },
+);
 
 /**
  * @DESC Deletes a todo
  * @API  DELETE todos/
  */
-todoRouter.delete("/:id", async (req, res) => {
+todoRouter.delete("/:id", authenticate, async (req, res) => {
   try {
     const todoId = req.params.id;
 
-    const todo = await Todo.findByIdAndDelete(todoId);
+    const todo = await Todo.findOneAndDelete({
+      _id: todoId,
+      user: req.user.userId,
+    });
 
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const todoSchema = new mongoose.Schema(
   {
     label: { type: String, required: true },
-    user: {},
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     isComplete: { type: Boolean, default: false },
   },
   {
