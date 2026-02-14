@@ -2,12 +2,14 @@ import express from "express";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import { todoRouter } from "./modules/todo/index.js";
+import { authRouter } from "./modules/auth/index.js";
 
 const app = express();
 dotenv.config();
 
 app.use(express.json());
 
+app.use("/auth", authRouter);
 app.use("/todos", todoRouter);
 
 app.get("/", (req, res) => res.send("Hello World!"));
